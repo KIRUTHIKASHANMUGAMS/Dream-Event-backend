@@ -1,6 +1,6 @@
 const AllowLocation = require("../model/allowLocation-model"); // Ensure this matches your export
 const statusCode = require("../utlis/statusCode");
-const constant = require("../utlis/constant").default;
+const constant = require("../utlis/constant");
 
 exports.allowLocationDetail = async (req, res) => {
     const { userId, lat, long } = req.body;

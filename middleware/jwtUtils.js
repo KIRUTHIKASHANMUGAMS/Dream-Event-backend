@@ -1,16 +1,45 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 
-const generateToken = (payload) => {
-  const secretKey = process.env.JWT_SECRET;
+
+
+
+const randomValue =(payload)=>{
+  const timestamp = new Date().getTime().toString();
+    const randomNumber = crypto.randomBytes(32).toString('hex');
+    return {
+      ...payload,
+      timestamp: timestamp,
+      random: randomNumber,
+    };
+}
+
+
+
+const generateAccessToken = (payload) => {
   const options = {
-    expiresIn: '1y',
+    expiresIn: process.env.JWT_EXPIRE_DATE || '1d',
   };
 
-  const token = jwt.sign(payload, secretKey, options);
+  const tokenPayload=randomValue(payload)
+  const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, options);
   return token;
 };
 
-module.exports = {
-  generateToken,
+const generateRefreshToken = (payload) => {
+  const options = {
+    expiresIn: process.env.JWT_REFRESH_EXPIRE_DATE || '7d',
+  };
+
+  const tokenPayload=randomValue(payload)
+  const refreshToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, options);
+  
+  return refreshToken;
 };
+
+module.exports = {
+  generateAccessToken,
+  generateRefreshToken,
+};
+

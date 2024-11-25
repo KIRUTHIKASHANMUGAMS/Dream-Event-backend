@@ -3,7 +3,7 @@ const userModel = require('../model/user-model');
 const statusCode = require("../utlis/statusCode");
 const constant = require("../utlis/constant");
 const bcrypt = require("bcrypt");
-const { generateToken } = require('../middleware/jwtUtils');
+const { generateAccessToken } = require('../middleware/jwtUtils');
 const { sendResetPasswordEmail } = require("../utlis/mail");
 const randomstring = require('randomstring');
 
@@ -80,7 +80,7 @@ exports.login = async (req, res) => {
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
-        const token = generateToken({ id: user._id, email: user.email });
+        const token = generateAccessToken({ id: user._id, email: user.email });
         user.token = token;
         await user.save();
 

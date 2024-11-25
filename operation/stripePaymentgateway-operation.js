@@ -1,6 +1,6 @@
 const stripe = require('stripe')('sk_test_51QA30s01ibCFPc6hXnuYRZ69dlpnRRRigERkjKjjVsH4lIOb0EGdRN33LHeJBl7yn7NYnaIWQ7B1WGFAmuKvluD2009EHQug1h');
 const YOUR_DOMAIN = 'http://localhost:8000';
-const constant = require("../utlis/constant").default;
+const constant = require("../utlis/constant");
 const statusCode = require("../utlis/statusCode");
 
 exports.getStripePayment = async (req, res) => {

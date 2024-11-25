@@ -1,6 +1,6 @@
 const { upcomingEvent } = require("../model/upcomingEvent-model");
 const statusCode = require("../utlis/statusCode");
-const constant = require("../utlis/constant").default;
+const constant = require("../utlis/constant");
 const favoriteEvent = require('../model/favoriteEvent-model');
 const { ObjectId } = require('mongoose').Types;
 const { getDistance } = require('geolib');
@@ -107,7 +107,7 @@ exports.createUpcomingEvent = async (req, res) => {
         await newEvent.save();
         return res.status(201).json({
             status: statusCode.CREATED,
-            message: constant.DATA_CREATED,
+             message: constant.DATA_CREATED,
             data: newEvent,
         });
     } catch (error) {
@@ -230,7 +230,6 @@ exports.nearByEvent = async (req, res) => {
             return distance <= 10000; // 10 kilometers in meters
         });
 
-        console.log("nearbyEvents", nearbyEvents);
 
         return res.status(200).json({
             statusCode: statusCode.OK,

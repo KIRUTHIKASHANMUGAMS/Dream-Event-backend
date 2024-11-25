@@ -13,6 +13,7 @@ const stripe = require('stripe')('sk_test_51QA30s01ibCFPc6hXnuYRZ69dlpnRRRigERkj
 const YOUR_DOMAIN = 'http://localhost:8081/ '; // Change to your domain in production
 
 exports.createSeatBooking = async (req, res) => {
+
     const { eventId, userId, seatsBooked } = req.body;
 
     // Validate input data
@@ -51,7 +52,7 @@ exports.createSeatBooking = async (req, res) => {
             }
         });
 
-        const totalPrice = bookedSeats.length * parseFloat(event.price) * 100; 
+        const totalPrice = bookedSeats.length * parseFloat(event.price) * 100;
         console.log("totalPrice", totalPrice);
         if (isNaN(totalPrice) || totalPrice <= 0) {
             return res.status(400).json({
@@ -59,68 +60,53 @@ exports.createSeatBooking = async (req, res) => {
                 message: "Total price calculation failed.",
             });
         }
-        const eventName = await upcomingEvent.findById({_id:eventId});
-        const userName= await register.findById({_id:userId})
-    
-        console.log("eventcategory" , eventName.eventId)
+        const eventName = await upcomingEvent.findById({ _id: eventId });
+        const userName = await register.findById({ _id: userId })
+
+        console.log("eventcategory", eventName.eventId)
 
 
-        
-        const date  = new Date();       
-         const newBooking = new seatBooking({
+
+        const date = new Date();
+        const newBooking = new seatBooking({
             eventId,
             userId,
             seatsBooked,
             totalPrice,
-            bookingDate:date.toISOString().split("T")[0],
+            bookingDate: date.toISOString().split("T")[0],
             paymentStatus: 'Unpaid',
         });
-       
+
 
         await newBooking.save();
-        
 
-        const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'usd',
-                        product_data: {
-                            name: 'Dream Event',
-                        },
-                        unit_amount: totalPrice,
-                    },
-                    quantity: 1,
-                },
-            ],
-            mode: 'payment',
-            success_url: `${YOUR_DOMAIN}paymentSuccessfully?redirect=true`,
-            cancel_url: `${YOUR_DOMAIN}?canceled=true`,
-            payment_intent_data: {
-                metadata: {
-                    user_id: userId,
-                    event_id: eventId,
-                    
-                    seats_booked: JSON.stringify(seatsBooked),
-                    eventName: eventName.eventName,
-                    userName: userName.userName,
-                    eventCategory:eventName.eventId.toString()
-                },
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: totalPrice,
+            currency: 'usd',
+
+            metadata: {
+                
+                user_id: userId,
+                event_id: eventId,
+                seats_booked: JSON.stringify(seatsBooked),
+                eventName: eventName.eventName,
+                userName: userName.userName,
             },
+            automatic_payment_methods: { enabled: true }
         });
+        
         
         res.status(201).json({
             status: statusCode.CREATED,
             message: constant.DATA_CREATED,
             data: {
                 booking: newBooking,
-                url: session.url, 
+                clientSecret: paymentIntent.client_secret,
             },
         });
 
     } catch (error) {
-        console.error(error);
+        console.error(error.message);
         return res.status(500).json({
             status: statusCode.INTERNAL_SERVER_ERROR,
             message: constant.ERR_INTERNAL_SERVER_ERROR,
@@ -128,9 +114,12 @@ exports.createSeatBooking = async (req, res) => {
     }
 };
 
+
+
+
 exports.paymentDetails = async (req, res) => {
     const { bookingId } = req.query;
-
+console.log("hai")
     console.log("req.query", req.query)
 
     try {
@@ -138,7 +127,7 @@ exports.paymentDetails = async (req, res) => {
         if (!tempBooking) {
             return res.status(404).json({ message: "Booking not found." });
         }
-
+console.log("tempBooking" ,tempBooking)
         tempBooking.paymentStatus = 'Paid';
 
         // Update seat status
@@ -147,7 +136,7 @@ exports.paymentDetails = async (req, res) => {
             tempBooking.seatsBooked.forEach(seat => {
                 const seatInfo = event.seats.find(s => s.seatNumber === seat);
                 if (seatInfo) {
-                    seatInfo.isBooked = true; 
+                    seatInfo.isBooked = true;
                     seatInfo.bookedBy = tempBooking.userId;
                 }
             });
@@ -157,7 +146,6 @@ exports.paymentDetails = async (req, res) => {
         // Update payment status and save final booking
         tempBooking.paymentStatus = 'Paid';
         await tempBooking.save();
-
         res.json({ message: "Booking confirmed!", bookingId: tempBooking._id });
 
     } catch (error) {
@@ -226,7 +214,7 @@ exports.getBookingDetails = async (req, res) => {
 };
 
 
-
+// customer list api
 exports.customerList = async (req, res) => {
     const { eventCategory, date } = req.body;
 
@@ -310,7 +298,7 @@ exports.customerList = async (req, res) => {
                 customerEmail: userDetails.email || null,
                 location: eventMapDetails.location || null,
                 eventName: eventMapDetails.eventName || null,
-          
+
             };
         });
 
@@ -412,7 +400,7 @@ exports.ticketBookingStatus = async (req, res) => {
                 pendingEvents.push(event);
             }
         });
-        
+
 
         // Respond with the booking status and categorized events
         return res.status(200).json({

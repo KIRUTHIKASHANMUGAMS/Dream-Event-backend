@@ -1,6 +1,6 @@
 const { chooseEvent } = require("../model/chooseEvent-model");
 const statusCode = require("../utlis/statusCode");
-const constant = require("../utlis/constant").default;
+const constant = require("../utlis/constant");
 
 exports.chooseEvents = async (req, res) => {
     const { userId, events } = req.body;
