@@ -1,8 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 function authenticate(req, res, next) {
-    const authHeader = req.header('Authorization'); // Ensure consistent naming
-
+    const authHeader = req.header('Authorization'); 
 
     if (!authHeader) {
         return res.status(401).json({ error: 'Access denied, no token provided' });
@@ -15,10 +14,10 @@ function authenticate(req, res, next) {
     }
 
     try {
-
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req['users'] = decoded;
-        next();
+        req.users = decoded;
+        
+        next();  // Continue to the next middleware (which is roleMiddleware)
     } catch (error) {
         console.error('Token verification failed:', error.message);
         return res.status(401).json({ error: error.message });

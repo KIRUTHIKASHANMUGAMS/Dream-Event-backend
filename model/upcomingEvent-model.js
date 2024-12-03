@@ -19,7 +19,7 @@ const upcomingEventSchema = new mongoose.Schema({
     eventType: { type: String, required: true },
     eventGuideline: { type: String, required: true },
     speakers: [speakerSchema ],
-
+    isDeleted: { type: Boolean, default: false },
     seats: [{
         seatNumber: { type: String },
         isBooked: { type: Boolean, default: false },

@@ -6,9 +6,8 @@ const seatBookingSchema = new mongoose.Schema({
     seatsBooked: { type: [String] ,required:true },
     totalPrice:{type:Number},
     bookingDate: { type: Date, default: Date.now() } ,
-    paymentStatus: { type: String, enum: ['Paid', 'Unpaid', 'refunded'], default: 'Unpaid' }, // Add paymentStatus field
-
-    
+    paymentStatus: { type: String, enum: ['Paid', 'Unpaid', 'Cancelled'], default: 'Unpaid' }, // Add paymentStatus field
+    paymentIntentId:{type:String ,required:true }
 
 
 

@@ -15,6 +15,7 @@ const LOCATION_SAVED_SUCCESSFULLY="Location saved successfully";
 const ERR_EVENT_EXISTS="Invalid event";
 const ERR_INVALID_EVENT_FORMAT="Invalid eventId format.";
 const EVENT_NAME_EXIST="An event with the same name and date already exists."
+const ROLE_ASSIGN="Role assigned successfully"
 
 
 
@@ -35,5 +36,6 @@ module.exports={
     LOCATION_SAVED_SUCCESSFULLY,
     ERR_EVENT_EXISTS,
     ERR_INVALID_EVENT_FORMAT,
-    EVENT_NAME_EXIST
+    EVENT_NAME_EXIST,
+    ROLE_ASSIGN
 }

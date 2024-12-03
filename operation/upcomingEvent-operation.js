@@ -106,9 +106,8 @@ exports.createUpcomingEvent = async (req, res) => {
 
         await newEvent.save();
         return res.status(201).json({
-            status: statusCode.CREATED,
+            status: statusCode.OK,
              message: constant.DATA_CREATED,
-            data: newEvent,
         });
     } catch (error) {
         console.error(error);
@@ -121,26 +120,181 @@ exports.createUpcomingEvent = async (req, res) => {
 };
 
 
+exports.deleteUpcomingEvent = async (req, res) => {
+    const { id } = req.params;
+    console.log("id" ,id)
+
+    if (!id) {
+        return res.status(400).json({ message: "Event ID is required." });
+    }
+
+    try {
+        // Check if the event exists
+        const event = await upcomingEvent.findById(id);
+        if (!event) {
+            return res.status(404).json({ message: "Event not found or already deleted." });
+        }
+
+        // Mark the event as deleted
+        event.isDeleted = true;
+        await event.save();
+
+        return res.status(200).json({
+            status: 200,
+            message: "Event soft deleted successfully.",
+            data: event,
+        });
+    } catch (error) {
+        console.error("Error soft deleting event:", error);
+        return res.status(500).json({
+            message: "An internal server error occurred.",
+            error: error.message,
+        });
+    }
+};
 
 
+exports.editUpcomingEvent = async (req, res) => {
+    const { id } = req.params;
+    const files = req.files || [];
+    console.log("Uploaded Files:", files);
+
+    const {
+        eventName,
+        eventDate,
+        eventTime,
+        price,
+        eventDescription,
+        lat,
+        long,
+        location,
+        totalSeats,
+        eventType,
+        eventGuideline,
+        speakers,
+    } = req.body;
+
+    // Validate required fields
+    if (!eventName || !eventDate || !eventTime || !price || !eventDescription || !lat || !long || !location || !totalSeats || !eventType || !eventGuideline) {
+        return res.status(400).json({
+            status: statusCode.BAD_REQUEST,
+            message: "Missing required fields.",
+        });
+    }
+
+    try {
+        const existingEvent = await upcomingEvent.findOne({ _id: new ObjectId(id) });
+        console.log("existingEvent" ,existingEvent)
+        if (!existingEvent) {
+            return res.status(404).json({
+                status: statusCode.NOT_FOUND,
+                message: "Event not found.",
+            });
+        }
+
+        // Parse speakers data if sent as a string
+        const speakersData = typeof speakers === "string" ? JSON.parse(speakers) : speakers || [];
+
+        // Process speaker data
+        const speakersArray = [];
+        for (let index = 0; index < speakersData.length; index++) {
+            const { speakerName, speakerType } = speakersData[index];
+            const speakerImageFile = files.find(file => file.fieldname === `speakers[${index}][speakerImage]`);
+
+            if (speakerName && speakerType) {
+                speakersArray.push({
+                    speakerName,
+                    speakerType,
+                    speakerImage: speakerImageFile ? speakerImageFile.path : null, // Use uploaded image path or null
+                });
+            }
+        }
+
+        // Handle main image upload
+        const mainImageFile = files.find(file => file.fieldname === "imageUrl")?.path || existingEvent.imageUrl;
+
+        // Update event fields
+        existingEvent.eventName = eventName;
+        existingEvent.eventDate = new Date(eventDate);
+        existingEvent.eventTime = eventTime;
+        existingEvent.price = price;
+        existingEvent.eventDescription = eventDescription;
+        existingEvent.lat = lat;
+        existingEvent.long = long;
+        existingEvent.location = location;
+        existingEvent.totalSeats = totalSeats;
+        existingEvent.eventType = eventType;
+        existingEvent.eventGuideline = eventGuideline;
+        existingEvent.speakers = speakersArray;
+        existingEvent.imageUrl = mainImageFile;
+        existingEvent.seats = Array.from({ length: totalSeats }, (_, i) => ({
+            seatNumber: (i + 1).toString(),
+            isBooked: false,
+        }));
+
+        await existingEvent.save();
+
+        return res.status(200).json({
+            status: statusCode.OK,
+            message: constant.DATA_UPDATED,
+            data: existingEvent,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: statusCode.INTERNAL_SERVER_ERROR,
+            message: "An error occurred while updating the event.",
+            error: error.message,
+        });
+    }
+};
+
+
+
+exports.getEventById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const event = await upcomingEvent.findById(id);
+        if (!event) {
+            return res.status(404).json({
+                status: statusCode.NOT_FOUND,
+                message: "Event not found.",
+            });
+        }
+
+        return res.status(200).json({
+            status: statusCode.OK,
+            message: "Event details retrieved successfully.",
+            data: event,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: statusCode.INTERNAL_SERVER_ERROR,
+            message: "An error occurred while retrieving the event.",
+            error: error.message,
+        });
+    }
+};
 exports.eventlist = async (req, res) => {
     const { eventCategory, eventDate } = req.body;
     try {
-       
-        const filter = {};
+        // Start with a basic filter
+        const filter = { isDeleted: false };
 
-       
+        // Log the initial filter
+
+        // Apply additional filters only if they are provided
         if (eventCategory) {
             filter.eventId = eventCategory; 
         }
         if (eventDate) {
-            filter.eventDate = eventDate; 
+            filter.eventDate = new Date(eventDate); // Ensure correct date format
         }
 
-        const response = await upcomingEvent.find();
-
-
-        
+        // Execute the query
+        const response = await upcomingEvent.find(filter);
 
         return res.status(200).json({
             statusCode: statusCode.OK,
@@ -154,6 +308,7 @@ exports.eventlist = async (req, res) => {
         });
     }
 };
+
 
 exports.eventById = async (req, res) => {
 
@@ -188,7 +343,9 @@ exports.eventListMobile = async (req, res) => {
         const response = await upcomingEvent.find({
             eventDate: {
                 $gte: today
-            }
+            }, 
+            isDeleted: false 
+        
         })
         return res.status(200).json({
             statusCode: statusCode.OK,
@@ -205,45 +362,52 @@ exports.eventListMobile = async (req, res) => {
 
 }
 
-
 exports.nearByEvent = async (req, res) => {
     try {
-        const { userId } = req.body
+        const { userId } = req.body;
 
-
+        // Fetch user location
         let userLocation = await AllowLocation.findOne({ userId: new ObjectId(userId) });
 
-        const today = new Date();
+        // Check if userLocation exists
+        if (!userLocation) {
+            return res.status(404).json({
+                statusCode: 404,
+                message: "User location not found.",
+            });
+        }
+
         const { lat, long } = userLocation;
 
+        // Fetch events
+        const today = new Date();
         const events = await upcomingEvent.find({
-            eventDate: {
-                $gte: today
-            }
+            eventDate: { $gte: today },
         });
 
+        // Filter nearby events
         const nearbyEvents = events.filter(event => {
+            if (!event.lat || !event.long) {
+                return false; // Skip events without location data
+            }
+
             const distance = getDistance(
                 { latitude: lat, longitude: long },
-                { latitude: event.lat, longitude: event.long } // Ensure these fields exist in your event model
+                { latitude: event.lat, longitude: event.long }
             );
             return distance <= 10000; // 10 kilometers in meters
         });
 
-
+        // Respond with nearby events
         return res.status(200).json({
-            statusCode: statusCode.OK,
-            nearByEvents: nearbyEvents
+            statusCode: 200,
+            nearByEvents: nearbyEvents,
         });
     } catch (error) {
         console.error(error);
         return res.status(500).json({
-            statusCode: statusCode.INTERNAL_SERVER_ERROR,
-            message: constant.ERR_INTERNAL_SERVER_ERROR,
+            statusCode: 500,
+            message: "Internal server error.",
         });
     }
-
-}
-
-
-
+};

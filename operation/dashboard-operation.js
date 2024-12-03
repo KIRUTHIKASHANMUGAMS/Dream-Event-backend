@@ -49,10 +49,11 @@ exports.dashboard = async (req, res) => {
             eventDate: {
                 $gte: pastDate,
 
-            }
+            },
+            isDeleted: false
         });
 
-        const trendingEvents = await upcomingEvent.find()
+        const trendingEvents = await upcomingEvent.find({isDeleted: false})
         const sortedEvents = trendingEvents.map(event => {
             const bookedSeatsCount = event.seats.filter(seat => seat.isBooked).length;
             return {

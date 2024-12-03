@@ -21,3 +21,18 @@ exports.sendResetPasswordEmail = (to, context) => {
         .catch((err) => console.log('Error Occurs:', err));
 };
 
+
+
+exports.sendLoginMail = (to, context) => {
+    const mailDetails = {
+        from: process.env.EMAIL_USER,
+        to: to,
+        subject: 'Login Mail',
+        text: context.resetLink,
+    };
+
+    return mailTransporter.sendMail(mailDetails)
+        .then(() => console.log('Email sent successfully'))
+        .catch((err) => console.log('Error Occurs:', err));
+};
+
